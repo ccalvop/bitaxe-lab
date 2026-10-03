@@ -1,0 +1,20 @@
+[project]
+name = "bitaxe-lab"
+version = "1.0.0"
+description = "Telemetry collector and tuning analysis for a Bitaxe Gamma solo miner"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["bitaxe_collect", "mock_axeos", "dataset", "sanitize", "charts"]
+
+[tool.pytest.ini_options]
+testpaths = ["collector/tests", "analysis/tests"]
+pythonpath = ["collector", "collector/tests", "analysis"]

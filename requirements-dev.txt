@@ -1,0 +1,5 @@
+pytest==8.4.2
+ruff==0.13.2
+matplotlib==3.9.2
+numpy==2.0.2
+pillow==11.0.0

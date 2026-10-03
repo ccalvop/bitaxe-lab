@@ -1,0 +1,60 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff==0.13.2
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: shellcheck deploy/*.sh
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install pytest==8.4.2
+      - run: pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t bitaxe-collect:ci -f deploy/docker/Dockerfile .
+      - name: Start mock AxeOS API
+        run: |
+          python3 collector/tests/mock_axeos.py --port 8080 &
+          sleep 1
+          curl -fsS http://127.0.0.1:8080/api/system/info > /dev/null
+      - name: Take one sample from the container
+        run: |
+          mkdir -p out
+          docker run --rm --network host -u "$(id -u):$(id -g)" -v "$PWD/out:/data" \
+            -e BITAXE_URL=http://127.0.0.1:8080 -e BITAXE_INTERVAL=0 bitaxe-collect:ci
+      - name: Assert a valid row was written
+        run: |
+          python3 - <<'PY'
+          import csv
+          rows = list(csv.DictReader(open("out/metrics.csv")))
+          assert len(rows) == 1 and rows[0]["status"] == "ok", rows
+          print("ok:", rows[0]["hashrate_ghs"], "GH/s")
+          PY

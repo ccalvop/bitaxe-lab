@@ -1,0 +1,13 @@
+# One telemetry sample of a Bitaxe miner, triggered by bitaxe-collect.timer.
+[Unit]
+Description=Bitaxe telemetry sample
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=bitaxe
+Group=bitaxe
+EnvironmentFile=/etc/default/bitaxe-collect
+ExecStart=/usr/bin/python3 /usr/local/lib/bitaxe-lab/bitaxe_collect.py
+NoNewPrivileges=yes

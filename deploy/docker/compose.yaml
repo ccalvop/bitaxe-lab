@@ -1,0 +1,16 @@
+# Usage: BITAXE_URL=http://<miner-ip> docker compose up -d   (CSV lands in ./data)
+services:
+  bitaxe-collect:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    image: bitaxe-collect:local
+    restart: unless-stopped
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      BITAXE_URL: ${BITAXE_URL:?set BITAXE_URL, e.g. http://192.0.2.10}
+      BITAXE_INTERVAL: ${BITAXE_INTERVAL:-300}
+      BITAXE_EXPECT_ADDRESS: ${BITAXE_EXPECT_ADDRESS:-}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./data:/data

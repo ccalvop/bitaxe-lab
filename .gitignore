@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+out/
+deploy/docker/data/
+
+# Never commit raw telemetry, flash dumps or firmware images: they hold identifiers and wifi credentials.
+data/raw/
+*.bin

@@ -1,0 +1,12 @@
+# Runs bitaxe-collect.service every 5 minutes.
+[Unit]
+Description=Bitaxe telemetry sample every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=10s
+Unit=bitaxe-collect.service
+
+[Install]
+WantedBy=timers.target
