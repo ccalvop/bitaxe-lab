@@ -18,19 +18,11 @@ board does not even appear on the computer.
 The included 5 V / 6 A supply has plenty of margin at factory settings (under 60 % load).
 Plan a bigger one only if you intend to push towards 1.5 TH/s.
 
-## 2. Optional: flash a clean official image
+## 2. Flash a clean official image
 
-Recommended if you bought it from a third party, even if the verification passes: you start
-from an image you downloaded yourself.
-
-```bash
-esptool --port /dev/ttyACM0 -b 921600 write-flash 0x0 esp-miner-factory-601-v2.15.1.bin
-```
-
-- The number in the file name is the **board version** (601 for the Gamma). The wrong one
-  writes the wrong ASIC settings
-- After flashing, the board runs a **self-test and waits for the RESET button**. That is not
-  a failure
+Recommended if you bought it from a third party, even when the verification passes: you start
+from an image you downloaded yourself, and the seller's settings are gone. Step by step in
+[firmware-verification/](../firmware-verification/README.md#5-flash-a-clean-official-image).
 
 ## 3. First Wi-Fi setup
 
