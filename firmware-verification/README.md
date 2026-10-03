@@ -1,8 +1,11 @@
-# Firmware verification
+# Firmware verification and clean flash
 
-Check that a Bitaxe bought from a third-party seller runs the published open-source
-[esp-miner](https://github.com/bitaxeorg/ESP-Miner) firmware, **before** flashing anything
-and before giving it network access.
+Do not trust a miner as it ships. This guide covers two steps, in this order:
+
+1. **Verify** that a Bitaxe bought from a third-party seller runs the published open-source
+   [esp-miner](https://github.com/bitaxeorg/ESP-Miner) firmware, before giving it network access
+2. **Flash** a clean official image that you downloaded and checked yourself, so you start from
+   a known state whatever the verification says
 
 Why it matters: some sellers ship boards whose web UI is also called AxeOS but run a modified
 binary that refuses official updates, depends on a subscription app or phones home. The UI
@@ -98,7 +101,7 @@ VERDICT: matches the official firmware
 Exit code `0` means the firmware matches, `1` means something differs, `2` means the flash
 has no readable partition table (encrypted or not ESP-IDF).
 
-## How to read it
+### How to read the result
 
 | Check | What it proves | What it does not |
 |-------|----------------|------------------|
@@ -108,6 +111,69 @@ has no readable partition table (encrypted or not ESP-IDF).
 
 The partition comparison is the strong check. The descriptor alone is not.
 
-Even with a clean result, **read the settings before connecting it to your Wi-Fi**: the
-unit in this repository was genuine but shipped with the seller's own Bitcoin address in
-both pools and overclocked to 740 MHz.
+Even with a clean result, **do not keep the shipped settings**: the unit in this repository
+was genuine but shipped with the seller's own Bitcoin address in both pools and overclocked
+to 740 MHz. Flashing the official image resets them.
+
+## 5. Flash a clean official image
+
+### Pick the right file
+
+From the [esp-miner releases](https://github.com/bitaxeorg/ESP-Miner/releases), download the
+**factory** image for your board, latest stable release (not a `rc` pre-release):
+
+```
+esp-miner-factory-<board>-<version>.bin      e.g. esp-miner-factory-601-v2.15.1.bin
+```
+
+`<board>` is printed on the PCB (601 for the Gamma). It matters: the factory image includes a
+default settings partition with the ASIC model, frequency and voltage of that board. The
+wrong one writes the wrong chip driver settings:
+
+| Key | 601 (Gamma, BM1370) | 401 (Supra, BM1368) |
+|-----|---------------------|---------------------|
+| `asicmodel` | BM1370 | BM1368 |
+| `asicfrequency` | 525 | 490 |
+| `asicvoltage` | 1150 | 1166 |
+
+Record its checksum, so you know later exactly what you flashed:
+
+```bash
+sha256sum esp-miner-factory-601-v2.15.1.bin
+```
+
+### Write it
+
+Barrel jack powered, USB connected, then:
+
+```bash
+esptool --port /dev/ttyACM0 -b 921600 write-flash 0x0 esp-miner-factory-601-v2.15.1.bin
+```
+
+It takes under a minute and ends with `Hash of data verified`. The factory image is a merged
+binary written at offset `0x0`: bootloader, partition table, default settings, firmware and web
+interface in one go.
+
+Prefer the command line over the web flasher: you choose the exact file and offset, you get a
+log, and a dropped browser connection halfway through a 15 MB write is the usual way to end up
+with a board that needs reflashing.
+
+### What happens next
+
+1. The board reboots and runs a **self-test**, then **waits for you to press RESET**. A board
+   sitting on the self-test screen is not a failed flash
+2. It opens a setup Wi-Fi hotspot, `Bitaxe_XXXX`
+3. Its default pool settings point at the **esp-miner project's donation address**, on both the
+   primary and the fallback pool. Change them before it mines for anyone
+
+Continue with the [setup guide](../docs/07-setup-guide.md#3-first-wi-fi-setup).
+
+### Check what you flashed
+
+Optional but cheap: dump it again and compare against the file you wrote. Only `nvs` should
+differ once you have configured it.
+
+```bash
+esptool --port /dev/ttyACM0 -b 921600 read-flash 0 0x1000000 after-flash.bin
+python3 verify_firmware.py after-flash.bin esp-miner-factory-601-v2.15.1.bin
+```
